@@ -50,11 +50,11 @@ export default function TanStackQueryDemo() {
   });
 
   // Complex query with AND conditions
-  const { data: complexUsers } = useComplexUserQuery(
+  const { data: complexUsers, error: complexUsersError } = useComplexUserQuery(
     {
       and: [
-        { createdAfter: '2023-01-01T00:00:00Z' },
-        { hasPublishedPosts: true },
+        { createdAt: { gte: '2023-01-01T00:00:00Z' } },
+        { posts: { some: { published: true } } },
       ],
     },
     {
@@ -291,6 +291,16 @@ export default function TanStackQueryDemo() {
       </div>
 
       {/* Complex Query Demo */}
+      {complexUsersError && (
+        <div className='bg-red-50 border border-red-200 rounded-lg p-4 mb-6'>
+          <h2 className='text-lg font-semibold text-red-800 mb-2'>
+            Complex Query Error:
+          </h2>
+          <p className='text-red-700'>
+            Error fetching user: {complexUsersError.message}
+          </p>
+        </div>
+      )}
       {complexUsers && (
         <div className='bg-white rounded-lg shadow-lg p-6'>
           <h2 className='text-xl font-semibold mb-4'>

@@ -15,7 +15,7 @@ export interface ApiHandlerOptions<
   afterQuery?: (results: any[]) => any[];
 }
 
-export async function createGenericHandler<TQuerySchema extends z.ZodSchema>(
+export function createGenericHandler<TQuerySchema extends z.ZodSchema>(
   options: ApiHandlerOptions<TQuerySchema>
 ) {
   return async function GET(request: NextRequest) {
