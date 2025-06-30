@@ -13,7 +13,11 @@ import {
 } from '../validation/posts';
 
 // Base API client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined'
+    ? window.location.origin
+    : 'http://localhost:3000');
 
 // Generic API client for type-safe requests
 export class ApiClient {
@@ -27,44 +31,55 @@ export class ApiClient {
     endpoint: string,
     params?: Record<string, any>
   ): Promise<T> {
-    const url = new URL(`${this.baseUrl}/api${endpoint}`);
-
-    // Add query parameters with proper handling of complex types
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          // Handle complex objects (like 'and', 'or' conditions) by JSON stringifying
-          if (typeof value === 'object' && !Array.isArray(value)) {
-            url.searchParams.append(key, JSON.stringify(value));
-          } else {
-            url.searchParams.append(key, String(value));
-          }
-        }
+    try {
+      console.log('API Request Debug:', {
+        baseUrl: this.baseUrl,
+        endpoint,
+        params,
       });
-    }
+      const url = new URL(`${this.baseUrl}/api${endpoint}`);
+      console.log('Constructed URL:', url.toString());
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      let errorData: ErrorResponse;
-      try {
-        errorData = await response.json();
-      } catch {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Add query parameters with proper handling of complex types
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            // Handle complex objects (like 'and', 'or' conditions) by JSON stringifying
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              url.searchParams.append(key, JSON.stringify(value));
+            } else {
+              url.searchParams.append(key, String(value));
+            }
+          }
+        });
       }
 
-      // Enhanced error handling for TanStack Query
-      const error = new Error(errorData.error || `HTTP ${response.status}`);
-      (error as any).status = response.status;
-      (error as any).validation = errorData.validation;
+      const response = await fetch(url.toString(), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        let errorData: ErrorResponse;
+        try {
+          errorData = await response.json();
+        } catch {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // Enhanced error handling for TanStack Query
+        const error = new Error(errorData.error || `HTTP ${response.status}`);
+        (error as any).status = response.status;
+        (error as any).validation = errorData.validation;
+        throw error;
+      }
+
+      return response.json();
+    } catch (error) {
+      console.error('API Request Error:', error);
       throw error;
     }
-
-    return response.json();
   }
 
   // Type-safe user queries
